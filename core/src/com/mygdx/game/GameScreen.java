@@ -3,9 +3,14 @@ package com.mygdx.game;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
@@ -19,12 +24,16 @@ public class GameScreen implements Screen {
     private Texture textureBackGround;
     private Texture textureSand;
     private Texture textureCactus;
+    private Sound playerJumpSound;
 
-    private float worldX;
 
+    private Music music;
+    private BitmapFont font48;
+    private BitmapFont font96;
     private boolean gameOver;
     private float groundHeigth = 190.0f;
     private float playerAncor = 200.0f;
+    private float time;
 
     private Player player;
     private Cactus[] enemies;
@@ -48,13 +57,31 @@ public class GameScreen implements Screen {
         textureBackGround = new Texture("bg.png");
         textureSand = new Texture("ground.png");
         textureCactus = new Texture("cactus.png");
-        player = new Player(this);
+        music =Gdx.audio.newMusic(Gdx.files.internal("Jumping bat.wav"));
+        music.setLooping(true);
+        music.setVolume(0.1f);
+        music.play();
+        playerJumpSound=Gdx.audio.newSound(Gdx.files.internal("laser.wav"));
+        player = new Player(this,playerJumpSound);
         enemies = new Cactus[10];
         enemies[0] = new Cactus(textureCactus, new Vector2(1400, getGroundHeigth()));
         for (int i = 1; i < enemies.length; i++) {
             enemies[i] = new Cactus(textureCactus, new Vector2(enemies[i - 1].getPosition().x + MathUtils.random(300, 900), getGroundHeigth()));
         }
         gameOver = false;
+
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("zorque.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 48;
+        parameter.borderColor = Color.BLACK;
+        parameter.borderWidth = 2;
+        parameter.shadowOffsetX = 3;
+        parameter.shadowOffsetY = 3;
+        parameter.shadowColor = Color.BLACK;
+        font48 = generator.generateFont(parameter);
+        parameter.size = 96;
+        font96 = generator.generateFont(parameter);
+        generator.dispose();
     }
 
     @Override
@@ -72,7 +99,25 @@ public class GameScreen implements Screen {
         for (int i = 0; i < enemies.length; i++) {
             enemies[i].render(batch, player.getPosition().x - playerAncor);
         }
+
+        font48.draw(batch, "SCORE : " + (int) player.getScore(), 22, 702);
+        if (gameOver) {
+            font96.draw(batch, "GAME OVER", 360, 362);
+            font48.setColor(1, 1, 1, 0.5f + 0.5f * (float) Math.sin(time * 5.0f));
+            font48.draw(batch, "Tap to RESTART", 450, 282);
+            font48.setColor(1, 1, 1, 1);
+        }
         batch.end();
+
+    }
+
+    public void reStart() {
+        gameOver = false;
+        player.reStart();
+        enemies[0].setPosition(1400, getGroundHeigth());
+        for (int i = 1; i < enemies.length; i++) {
+            enemies[i].setPosition(enemies[i - 1].getPosition().x + MathUtils.random(300, 900), getGroundHeigth());
+        }
 
     }
 
@@ -107,6 +152,7 @@ public class GameScreen implements Screen {
     @Override
     public void hide() {
 
+
     }
 
     @Override
@@ -114,10 +160,12 @@ public class GameScreen implements Screen {
         textureBackGround.dispose();
         textureSand.dispose();
         textureCactus.dispose();
+        music.dispose();
+        playerJumpSound.dispose();
     }
 
     public void update(float dt) {
-        //worldX+=200.f*dt;
+        time += dt;
         if (!gameOver) {
             player.update(dt);
             for (int i = 0; i < enemies.length; i++) {
@@ -128,10 +176,14 @@ public class GameScreen implements Screen {
             for (int i = 0; i < enemies.length; i++) {
                 if (enemies[i].getRectangle().overlaps(player.getRectangle())) {
                     gameOver = true;
+                    break;
                 }
 
             }
+        } else if (Gdx.input.justTouched()) {
+            reStart();
         }
+
 
     }
 }
