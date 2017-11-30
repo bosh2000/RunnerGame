@@ -1,6 +1,7 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -16,6 +17,8 @@ public class Player {
     private Vector2 velocity;
     private Rectangle rectangle;
 
+    private Sound jumpSound;
+
     private float score;
     private float time;
 
@@ -30,13 +33,15 @@ public class Player {
         return rectangle;
     }
 
-    public Player(GameScreen gameScreen) {
+    public Player(GameScreen gameScreen,Sound jumpSound) {
+        this.jumpSound=jumpSound;
         this.gameScreen = gameScreen;
         this.texture = new Texture("runner.png");
         this.position = new Vector2(0, 190.0f);
         this.velocity = new Vector2(240.0f, 0);
         this.score = 0;
         this.rectangle=new Rectangle(position.x+WIDTH/4,position.y,WIDTH/2,HEIGTH);
+
 
     }
 
@@ -55,12 +60,27 @@ public class Player {
             velocity.y=0.0f;
             if (Gdx.input.justTouched()) {
                 velocity.y = 420.0f;
-
+                jumpSound.play();
             }
         }
-
+        score+=0.1;
         position.mulAdd(velocity, dt);
-        velocity.x+=5.0f*dt;
+        velocity.x+=15.0f*dt;
         rectangle.setPosition(position.x+WIDTH/4,position.y);
+    }
+
+    public float getScore() {
+        return score;
+    }
+
+    public void setScore(float score) {
+        this.score = score;
+    }
+
+    public void reStart(){
+        position.set(0,gameScreen.getGroundHeigth());
+        score=0;
+        velocity.set(240.0f,0.0f);
+        rectangle.setPosition(position);
     }
 }
